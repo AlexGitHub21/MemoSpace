@@ -1,4 +1,5 @@
 import datetime
+import uuid
 
 from pydantic import BaseModel, EmailStr
 
@@ -11,7 +12,7 @@ class GetUserByEmail(BaseModel):
     email: EmailStr
 
 
-class RegisterUser(GetUserByEmail):
+class AuthUser(GetUserByEmail):
     password: str
 
 
@@ -25,5 +26,13 @@ class UserReturnData(GetUserByID, GetUserByEmail):
     is_superuser: bool
     created_at: datetime.datetime
     updated_at: datetime.datetime
+
+
+class GetUserWithIDAndEmail(GetUserByID, CreateUser):
+    pass
+
+
+class UserVerifySchema(GetUserByID, GetUserByEmail):
+    session_id: uuid.UUID | str | None = None
 
 
