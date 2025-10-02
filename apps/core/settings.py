@@ -39,6 +39,7 @@ class DBSettings(BaseSettings):
         env_file=".env", env_file_encoding="utf8", extra="ignore"
     )
 
+    # возвращаем строку подключения к бд
     @property
     def get_db_url(self):
         return f"mysql+aiomysql://{self.DB_USER}:{self.DB_PASSWORD.get_secret_value()}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"

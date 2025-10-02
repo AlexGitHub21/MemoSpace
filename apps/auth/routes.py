@@ -4,7 +4,7 @@ from apps.auth.services import UserService
 from starlette import status
 from starlette.responses import JSONResponse
 from typing import Annotated
-from depends import get_current_user
+from apps.auth.depends import get_current_user
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -39,7 +39,8 @@ async def login(user: AuthUser, service: UserService = Depends(UserService)) -> 
     path="/logout",
     status_code=status.HTTP_200_OK
 )
-async def logout(user: Annotated[UserVerifySchema, Depends(get_current_user)], service: Depends(UserService)) -> JSONResponse:
+async def logout(user: Annotated[UserVerifySchema, Depends(get_current_user)],
+                 service: UserService = Depends(UserService)) -> JSONResponse:
     return await service.logout_user(user=user)
 
 
@@ -49,6 +50,9 @@ async def logout(user: Annotated[UserVerifySchema, Depends(get_current_user)], s
 )
 async def get_auth_user(user: Annotated[UserVerifySchema, Depends(get_current_user)]) -> UserVerifySchema:
     return user
+
+
+
 
 
 

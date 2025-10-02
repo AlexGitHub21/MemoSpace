@@ -1,7 +1,8 @@
 import datetime
 import uuid
+from typing import Annotated
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, StringConstraints
 
 
 class GetUserByID(BaseModel):

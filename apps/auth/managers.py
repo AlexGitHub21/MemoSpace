@@ -1,10 +1,10 @@
 import uuid
 
-from db.db_dependency import DBDependency
+from apps.core.core_dependency.db_dependency import DBDependency
 from fastapi import Depends, HTTPException
 from db.models import User
 from apps.auth.schemas import CreateUser, UserReturnData, GetUserWithIDAndEmail, UserVerifySchema
-from sqlalchemy import insert, update, select, delete
+from sqlalchemy import update, select, insert
 from sqlalchemy.exc import IntegrityError
 from apps.core.core_dependency.redis_dependency import RedisDependency
 
@@ -78,7 +78,7 @@ class UserManager:
 
     async def revoke_access_token(self, user_id: uuid.UUID | str, session_id: str) -> None:
         async with self.redis.get_client() as client:
-            return await client.delete(f"{user_id}:{session_id}")
+            await client.delete(f"{user_id}:{session_id}")
 
 
 
