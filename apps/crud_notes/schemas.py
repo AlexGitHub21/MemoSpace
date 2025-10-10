@@ -14,3 +14,9 @@ class NoteVerifySchema(BaseNote):
     author_id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UpdateNoteSchema(BaseModel):
+    id: int
+    field: str
+    content: str
