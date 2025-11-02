@@ -47,7 +47,7 @@ def mock_send_email():
 @pytest.mark.asyncio
 async def test_auth_register(mock_send_email):
     data = {
-        "email": "bizyaeva_2020@mail.ru",
+        "email": "example@mail.ru",
         "password": "passwordLosh24598"
     }
     async with AsyncClient(
