@@ -19,7 +19,7 @@ TestSessionLocal = async_sessionmaker(test_engine, expire_on_commit=False, autoc
 
 @pytest_asyncio.fixture
 async def test_session() -> AsyncSession:
-    async with TestSessionLocal() as session:  # TestSessionLocal — async_sessionmaker
+    async with TestSessionLocal() as session:
         yield session
 
 
@@ -28,8 +28,6 @@ async def override_db():
 
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-
-
 
     app.dependency_overrides[DBDependency] = lambda: DBDependency()
     app.dependency_overrides[DBDependency().db_session] = test_session
@@ -99,7 +97,6 @@ async def test_auth_login(test_session):
     password = "passwordLosh24598"
     hash_password = await AuthHandler().get_password_hash(password)
 
-    # async for session in override_db():
     test_user = User(email=email, hashed_password=hash_password)
     test_session.add(test_user)
     await test_session.commit()
@@ -125,3 +122,43 @@ async def test_auth_login(test_session):
 
     assert auth_cookie is not None
     assert len(auth_cookie) > 10
+
+
+@pytest.mark.asyncio
+async def test_auth_logout(test_session):
+    email = "example@mail.ru"
+    password = "passwordLosh24598"
+    hash_password = await AuthHandler().get_password_hash(password)
+
+    test_user = User(email=email, hashed_password=hash_password)
+    test_session.add(test_user)
+    await test_session.commit()
+    await test_session.refresh(test_user)
+
+    mock_redis = AsyncMock()
+    mock_redis.__aenter__.return_value = mock_redis
+    mock_redis.__aexit__.return_value = None
+    with patch("apps.core.core_dependency.redis_dependency.RedisDependency.get_client",
+               return_value=mock_redis
+               ):
+        async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+        ) as ac:
+            response = await ac.post(
+                "/api/v1/auth/login",
+                json={"email": email, "password": password})
+            assert response.status_code == 200
+            assert response.json() == {"message": "Вход успешен"}
+
+        auth_cookie = response.cookies.get("Authorization")
+        assert auth_cookie is not None
+        async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+        ) as ac:
+            response = await ac.get(
+                "/api/v1/auth/logout",
+                headers={"Cookie": f"Authorization={auth_cookie}"}
+            )
+        assert response.status_code == 200
+        assert response.json() == {"message": "Logged out"}
+
