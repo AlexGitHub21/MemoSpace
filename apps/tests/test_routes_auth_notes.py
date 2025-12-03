@@ -48,6 +48,18 @@ def mock_send_email():
 
 
 @pytest_asyncio.fixture(autouse=True)
+async def mock_redis():
+    mock_redis = AsyncMock()
+    mock_redis.__aenter__.return_value = mock_redis
+    mock_redis.__aexit__.return_value = None
+    with patch("apps.core.core_dependency.redis_dependency.RedisDependency.get_client",
+               return_value=mock_redis
+    ):
+        yield mock_redis
+
+
+
+@pytest_asyncio.fixture(autouse=True)
 async def open_async_client():
     async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
@@ -68,6 +80,7 @@ async def register_user(open_async_client):
 @pytest.mark.asyncio
 async def test_auth_register(open_async_client, register_user, mock_send_email):
     data, response = register_user
+
     assert response.status_code == 200
     result = response.json()
     assert result["email"] == data["email"]
@@ -95,7 +108,7 @@ async def test_auth_confirm_register(open_async_client, register_user, mock_send
 
 
 @pytest.mark.asyncio
-async def test_auth_login(test_session):
+async def test_auth_login(open_async_client, mock_redis, test_session):
     email = "example@mail.ru"
     password = "passwordLosh24598"
     hash_password = await AuthHandler().get_password_hash(password)
@@ -105,18 +118,10 @@ async def test_auth_login(test_session):
     await test_session.commit()
     await test_session.refresh(test_user)
 
-    mock_redis = AsyncMock()
-    mock_redis.__aenter__.return_value = mock_redis
-    mock_redis.__aexit__.return_value = None
-    with patch("apps.core.core_dependency.redis_dependency.RedisDependency.get_client",
-        return_value=mock_redis
-    ):
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as open_async_client:
-            response = await open_async_client.post(
-                "/api/v1/auth/login",
-                json={"email": email, "password": password})
+    response = await open_async_client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": password})
+
     assert response.status_code == 200
     assert response.json() == {"message":"Вход успешен"}
 
@@ -128,7 +133,7 @@ async def test_auth_login(test_session):
 
 
 @pytest.mark.asyncio
-async def test_auth_logout(test_session):
+async def test_auth_logout(open_async_client, test_session):
     email = "example@mail.ru"
     password = "passwordLosh24598"
     hash_password = await AuthHandler().get_password_hash(password)
@@ -138,32 +143,25 @@ async def test_auth_logout(test_session):
     await test_session.commit()
     await test_session.refresh(test_user)
 
-    mock_redis = AsyncMock()
-    mock_redis.__aenter__.return_value = mock_redis
-    mock_redis.__aexit__.return_value = None
-    with patch("apps.core.core_dependency.redis_dependency.RedisDependency.get_client",
-               return_value=mock_redis
-               ):
-        async with AsyncClient(
-                transport=ASGITransport(app=app), base_url="http://test"
-        ) as open_async_client:
-            response = await open_async_client.post(
-                "/api/v1/auth/login",
-                json={"email": email, "password": password})
-            assert response.status_code == 200
-            assert response.json() == {"message": "Вход успешен"}
+    response = await open_async_client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": password})
 
-        auth_cookie = response.cookies.get("Authorization")
-        assert auth_cookie is not None
-        async with AsyncClient(
-                transport=ASGITransport(app=app), base_url="http://test"
-        ) as open_async_client:
-            response = await open_async_client.get(
-                "/api/v1/auth/logout",
-                headers={"Cookie": f"Authorization={auth_cookie}"}
-            )
-        assert response.status_code == 200
-        assert response.json() == {"message": "Logged out"}
+    assert response.status_code == 200
+    assert response.json() == {"message": "Вход успешен"}
+
+    auth_cookie = response.cookies.get("Authorization")
+    assert auth_cookie is not None
+
+    async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+    ) as open_async_client:
+        response = await open_async_client.get(
+            "/api/v1/auth/logout",
+            headers={"Cookie": f"Authorization={auth_cookie}"}
+        )
+    assert response.status_code == 200
+    assert response.json() == {"message": "Logged out"}
 
 
 @pytest.mark.asyncio
