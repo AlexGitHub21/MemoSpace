@@ -41,23 +41,33 @@ async def override_db():
     app.dependency_overrides.clear()
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(autouse=True)
 def mock_send_email():
     with patch("apps.auth.tasks.send_confirmation_email.delay") as mock_task:
         yield mock_task
 
 
-@pytest.mark.asyncio
-async def test_auth_register(mock_send_email):
+@pytest_asyncio.fixture(autouse=True)
+async def open_async_client():
+    async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+    ) as open_async_client:
+        yield open_async_client
+
+
+@pytest_asyncio.fixture
+async def register_user(open_async_client):
     data = {
         "email": "example@mail.ru",
         "password": "passwordLosh24598"
     }
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
-        response = await ac.post("/api/v1/auth/register", json=data)
+    response = await open_async_client.post("/api/v1/auth/register", json=data)
+    yield data, response
 
+
+@pytest.mark.asyncio
+async def test_auth_register(open_async_client, register_user, mock_send_email):
+    data, response = register_user
     assert response.status_code == 200
     result = response.json()
     assert result["email"] == data["email"]
@@ -65,27 +75,20 @@ async def test_auth_register(mock_send_email):
 
 
 @pytest.mark.asyncio
-async def test_auth_confirm_register(mock_send_email):
-    data = {
-        "email": "example@mail.ru",
-        "password": "passwordLosh24598"
-    }
-    async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
-        response = await ac.post("/api/v1/auth/register", json=data)
-        assert response.status_code == 200
+async def test_auth_confirm_register(open_async_client, register_user, mock_send_email):
+    data, response = register_user
+    assert response.status_code == 200
 
-        _, kwargs = mock_send_email.call_args
-        sent_email = kwargs["to_email"]
-        token = kwargs["token"]
+    _, kwargs = mock_send_email.call_args
+    sent_email = kwargs["to_email"]
+    token = kwargs["token"]
 
-        assert sent_email == data["email"]
-        assert isinstance(token, str)
+    assert sent_email == data["email"]
+    assert isinstance(token, str)
 
-        response_confirm = await ac.get(
-            f"/api/v1/auth/register_confirm?token={token}"
-        )
+    response_confirm = await open_async_client.get(
+        f"/api/v1/auth/register_confirm?token={token}"
+    )
 
     assert response_confirm.status_code == 200
     assert response_confirm.json() == {"message": "Электронная почта подтверждена"}
@@ -110,8 +113,8 @@ async def test_auth_login(test_session):
     ):
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
-            response = await ac.post(
+        ) as open_async_client:
+            response = await open_async_client.post(
                 "/api/v1/auth/login",
                 json={"email": email, "password": password})
     assert response.status_code == 200
@@ -143,8 +146,8 @@ async def test_auth_logout(test_session):
                ):
         async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
-            response = await ac.post(
+        ) as open_async_client:
+            response = await open_async_client.post(
                 "/api/v1/auth/login",
                 json={"email": email, "password": password})
             assert response.status_code == 200
@@ -154,11 +157,16 @@ async def test_auth_logout(test_session):
         assert auth_cookie is not None
         async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
-            response = await ac.get(
+        ) as open_async_client:
+            response = await open_async_client.get(
                 "/api/v1/auth/logout",
                 headers={"Cookie": f"Authorization={auth_cookie}"}
             )
         assert response.status_code == 200
         assert response.json() == {"message": "Logged out"}
+
+
+@pytest.mark.asyncio
+async def test_create_note(test_session):
+    pass
 
