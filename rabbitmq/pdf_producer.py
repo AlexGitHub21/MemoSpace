@@ -1,6 +1,5 @@
+import json
 import aio_pika
-import asyncio
-from aio_pika import connect, Message
 from dotenv import load_dotenv
 import os
 
@@ -11,7 +10,7 @@ RMHOST = os.getenv("RMHOST", "localhost")
 RMPORT = os.getenv("RMPORT", "5672")
 
 
-async def main() -> None:
+async def publish_pdf_task(user_id: int, note_id: int):
     connection = await aio_pika.connect_robust(f"amqp://{RMUSER}:{RMPASSWORD}@{RMHOST}:{RMPORT}/")
 
     async with connection:
@@ -22,12 +21,17 @@ async def main() -> None:
             type=aio_pika.ExchangeType.DIRECT,
             durable=True
         )
+        message = {
+            "user_id": user_id,
+            "note_id": note_id
+        }
 
         await exchange.publish(
-            aio_pika.Message(body=f"Generate pdf".encode()),
-                             routing_key="pdf",
+            aio_pika.Message(body=json.dumps(message).encode(),
+                        delivery_mode=aio_pika.DeliveryMode.PERSISTENT),
+                        routing_key="pdf"
         )
         print("Message sent")
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# if __name__ == "__main__":
+#     asyncio.run(publish_pdf_task())

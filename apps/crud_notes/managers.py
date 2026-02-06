@@ -5,6 +5,7 @@ from apps.core.core_dependency.redis_dependency import RedisDependency
 from apps.crud_notes.schemas import BaseNote, NoteVerifySchema
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy import update, select, insert, delete
+from typing import Optional
 
 
 class NoteManager:
@@ -95,3 +96,18 @@ class NoteManager:
             except SQLAlchemyError:
                 await session.rollback()
                 return False
+
+    async def get_note(self, user_id: int, note_id: int) -> Optional[dict]:
+        async with self.db.db_session() as session:
+            query = select(
+                self.model.tags,
+                self.model.title,
+                self.model.content,
+                self.model.created_at,
+                self.model.updated_at
+            ).where(self.model.id == note_id,
+                    self.model.author_id == user_id)
+
+            result = await session.execute(query)
+            note = result.mappings().one_or_none()
+            return dict(note) if note else None

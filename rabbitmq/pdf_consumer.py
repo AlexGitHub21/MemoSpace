@@ -1,8 +1,12 @@
 import aio_pika
 import asyncio
-from aio_pika import connect, Message
+import json
 from dotenv import load_dotenv
 import os
+from apps.core.core_dependency.redis_dependency import RedisDependency
+from apps.core.core_dependency.db_dependency import DBDependency
+from apps.crud_notes.managers import NoteManager
+
 
 load_dotenv()
 RMUSER = os.getenv("RMUSER")
@@ -14,8 +18,23 @@ async def process_message(
         message: aio_pika.abc.AbstractIncomingMessage,
 ) -> None:
     async with message.process(requeue=True):
-        print(message.body.decode())
-        await asyncio.sleep(1)
+        data = json.loads(message.body)
+
+        note_manager = NoteManager(
+            db=DBDependency(),
+            redis=RedisDependency()
+        )
+
+        user_id = int(data["user_id"])
+        note_id = int(data["note_id"])
+
+        note = await note_manager.get_note(user_id, note_id)
+        print(note)
+        # if not note:
+        #     return pass
+        #
+        # generate_pdf(note)
+
 
 async def main() -> None:
     connection = await aio_pika.connect_robust(f"amqp://{RMUSER}:{RMPASSWORD}@{RMHOST}:{RMPORT}/")

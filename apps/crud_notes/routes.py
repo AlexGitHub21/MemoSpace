@@ -15,7 +15,8 @@ crud_notes_router = APIRouter(prefix="/crud_notes", tags=["crud_notes"])
     status_code=status.HTTP_200_OK
 )
 async def create_note(user: Annotated[UserVerifySchema, Depends(get_current_user)],
-                      content: BaseNote, service: NoteService = Depends(NoteService)) -> NoteVerifySchema:
+                      content: BaseNote,
+                      service: NoteService = Depends(NoteService)) -> NoteVerifySchema:
     return await service.add_note(user_id=user.id, note=content)
 
 
@@ -54,5 +55,15 @@ async def delete_note(user: Annotated[UserVerifySchema, Depends(get_current_user
 )
 async def update_note(user: Annotated[UserVerifySchema, Depends(get_current_user)],
                         data: UpdateNoteSchema,
-                      service: NoteService = Depends(NoteService)) -> bool:
+                        service: NoteService = Depends(NoteService)) -> bool:
     return await service.update_note(user_id=user.id, note_id=data.id, field=data.field, content=data.content)
+
+
+@crud_notes_router.post(
+    path="/note_export_pdf",
+    status_code=status.HTTP_200_OK
+)
+async def generate_pdf(user: Annotated[UserVerifySchema, Depends(get_current_user)],
+                        note_id: int,
+                        service: NoteService = Depends(NoteService)) -> bool:
+    return await service.enqueue_pdf_generation(user_id=user.id, note_id=note_id)

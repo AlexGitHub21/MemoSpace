@@ -2,7 +2,7 @@ from apps.auth.schemas import GetUserByID, UserVerifySchema
 from apps.crud_notes.schemas import BaseNote, NoteVerifySchema
 from apps.crud_notes.managers import NoteManager
 from fastapi import Depends
-
+from rabbitmq.pdf_producer import publish_pdf_task
 
 class NoteService:
     def __init__(self, manager: NoteManager = Depends(NoteManager)) -> None:
@@ -23,3 +23,6 @@ class NoteService:
     async def update_note(self, user_id: int, note_id: int, field: str, content: str) -> bool:
         return await self.manager.update_note_by_user(user_id=user_id, note_id=note_id, field=field, content=content)
 
+    async def enqueue_pdf_generation(self, user_id: int, note_id: int) -> bool:
+        await publish_pdf_task(user_id=user_id, note_id=note_id)
+        return True
