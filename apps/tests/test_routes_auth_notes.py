@@ -3,7 +3,7 @@ import pytest_asyncio
 import pytest
 from httpx import ASGITransport, AsyncClient
 from db.models.base import Base
-from db.models import User, Comment, Post
+from db.models import User
 from unittest.mock import patch, AsyncMock
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from apps.core.core_dependency.db_dependency import DBDependency

@@ -4,7 +4,7 @@ from db.models import Post
 from apps.core.core_dependency.redis_dependency import RedisDependency
 from apps.crud_notes.schemas import BaseNote, NoteVerifySchema
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy import update, select, insert, delete
+from sqlalchemy import update, select, delete
 from typing import Optional
 
 

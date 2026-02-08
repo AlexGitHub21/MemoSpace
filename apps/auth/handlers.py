@@ -3,14 +3,14 @@ import uuid
 
 import jwt
 from passlib.context import CryptContext
-from apps.core.settings import settings
+from apps.core.settings import app_settings
 from apps.auth.named_tuples import CreateTokenTuple
 from fastapi import HTTPException
 from starlette import status
 
 
 class AuthHandler:
-    secret = settings.secret_key.get_secret_value()
+    secret = app_settings.secret_key.get_secret_value()
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     async def get_password_hash(self, password: str) -> str:
@@ -20,7 +20,7 @@ class AuthHandler:
         return self.pwd_context.verify(raw_password, hashed_password)
 
     async def create_access_token(self, user_id: str) -> CreateTokenTuple:
-        expire = datetime.now(timezone.utc) + timedelta(seconds=settings.access_token_expire)
+        expire = datetime.now(timezone.utc) + timedelta(seconds=app_settings.access_token_expire)
 
         session_id = str(uuid.uuid4())
         data = {

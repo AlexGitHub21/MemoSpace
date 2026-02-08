@@ -1,11 +1,11 @@
-from apps.core.settings import settings
+from apps.core.settings import redis_settings
 from redis.asyncio import ConnectionPool, Redis
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 class RedisDependency():
 
     def __init__(self):
-        self._url = settings.redis_settings.redis_url
+        self._url = redis_settings.redis_url
         self._pool: ConnectionPool = self._init_pool()
 
     def _init_pool(self) -> ConnectionPool:

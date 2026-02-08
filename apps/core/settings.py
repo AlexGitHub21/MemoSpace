@@ -1,6 +1,11 @@
+from pathlib import Path
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+ENV_FILE = BASE_DIR / ".env"
+# from dotenv import load_dotenv
+# load_dotenv()
 
 class EmailSettings(BaseSettings):
     email_host: str
@@ -9,7 +14,7 @@ class EmailSettings(BaseSettings):
     email_password: str
 
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf8", extra="ignore"
+        env_file=ENV_FILE, env_file_encoding="utf8", extra="ignore"
     )
 
 
@@ -19,7 +24,7 @@ class RedisSettings(BaseSettings):
     redis_db: int
 
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf8", extra="ignore"
+        env_file=ENV_FILE, env_file_encoding="utf8", extra="ignore"
     )
 
     @property
@@ -36,7 +41,7 @@ class DBSettings(BaseSettings):
     DB_ECHO: bool
 
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf8", extra="ignore"
+        env_file=ENV_FILE, env_file_encoding="utf8", extra="ignore"
     )
 
     # возвращаем строку подключения к бд
@@ -45,20 +50,34 @@ class DBSettings(BaseSettings):
         return f"mysql+aiomysql://{self.DB_USER}:{self.DB_PASSWORD.get_secret_value()}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
 
+class RabbitSettings(BaseSettings):
+    RMUSER: str
+    RMPASSWORD: str
+    RMHOST: str = "localhost"
+    RMPOST: int = 5672
+
+    model_config = SettingsConfigDict(env_file=ENV_FILE, env_file_encoding="utf8", extra="ignore")
+
+
+
 class Settings(BaseSettings):
-    DB_SETTINGS: DBSettings = DBSettings()
-    email_settings: EmailSettings = EmailSettings()
-    redis_settings: RedisSettings = RedisSettings()
+    # DB_SETTINGS: DBSettings = DBSettings()
+    # email_settings: EmailSettings = EmailSettings()
+    # redis_settings: RedisSettings = RedisSettings()
     secret_key: SecretStr
     templates_dir: str = "templates"
     frontend_url: str
     access_token_expire: int
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=ENV_FILE,
         env_file_encoding="utf8",
         extra="ignore"
     )
 
-
-settings = Settings()
+email_settings = EmailSettings()
+redis_settings = RedisSettings()
+db_settings = DBSettings()
+app_settings = Settings()
+rabbit_settings = RabbitSettings()
+# settings = Settings()

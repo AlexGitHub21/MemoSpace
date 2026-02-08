@@ -3,7 +3,7 @@ from apps.auth.managers import UserManager
 from apps.auth.handlers import AuthHandler
 from apps.auth.schemas import AuthUser, UserReturnData, CreateUser, UserVerifySchema
 from itsdangerous import URLSafeTimedSerializer, BadSignature
-from apps.core.settings import settings
+from apps.core.settings import app_settings
 from apps.auth.tasks import send_confirmation_email
 from starlette import status
 from starlette.responses import JSONResponse
@@ -13,7 +13,7 @@ class UserService:
     def __init__(self, manager: UserManager = Depends(UserManager), handler: AuthHandler = Depends(AuthHandler)) -> None:
         self.manager = manager
         self.handler = handler
-        self.serializer = URLSafeTimedSerializer(secret_key=settings.secret_key.get_secret_value())
+        self.serializer = URLSafeTimedSerializer(secret_key=app_settings.secret_key.get_secret_value())
 
     async def register_user(self, user: AuthUser) -> UserReturnData:
         hashed_password = await self.handler.get_password_hash(user.password)
@@ -59,7 +59,7 @@ class UserService:
             key="Authorization",
             value=token,
             httponly=True,
-            max_age=settings.access_token_expire,
+            max_age=app_settings.access_token_expire,
         )
 
         return response

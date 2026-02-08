@@ -1,10 +1,9 @@
 import uuid
-
 from apps.core.core_dependency.db_dependency import DBDependency
 from fastapi import Depends, HTTPException
 from db.models import User
 from apps.auth.schemas import CreateUser, UserReturnData, GetUserWithIDAndEmail, UserVerifySchema
-from sqlalchemy import update, select, insert
+from sqlalchemy import update, select
 from sqlalchemy.exc import IntegrityError
 from apps.core.core_dependency.redis_dependency import RedisDependency
 

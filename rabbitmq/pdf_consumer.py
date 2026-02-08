@@ -1,18 +1,19 @@
 import aio_pika
 import asyncio
 import json
-from dotenv import load_dotenv
-import os
+# from dotenv import load_dotenv
+# import os
 from apps.core.core_dependency.redis_dependency import RedisDependency
 from apps.core.core_dependency.db_dependency import DBDependency
 from apps.crud_notes.managers import NoteManager
+from apps.core.settings import rabbit_settings
 
 
-load_dotenv()
-RMUSER = os.getenv("RMUSER")
-RMPASSWORD = os.getenv("RMPASSWORD")
-RMHOST = os.getenv("RMHOST", "localhost")
-RMPORT = os.getenv("RMPORT", "5672")
+# load_dotenv()
+# RMUSER = os.getenv("RMUSER")
+# RMPASSWORD = os.getenv("RMPASSWORD")
+# RMHOST = os.getenv("RMHOST", "localhost")
+# RMPORT = os.getenv("RMPORT", "5672")
 
 async def process_message(
         message: aio_pika.abc.AbstractIncomingMessage,
@@ -37,7 +38,7 @@ async def process_message(
 
 
 async def main() -> None:
-    connection = await aio_pika.connect_robust(f"amqp://{RMUSER}:{RMPASSWORD}@{RMHOST}:{RMPORT}/")
+    connection = await aio_pika.connect_robust(f"amqp://{rabbit_settings.RMUSER}:{rabbit_settings.RMPASSWORD}@{rabbit_settings.RMHOST}:{rabbit_settings.RMPORT}/")
 
     queue_name = "pdf_queue"
     channel = await connection.channel()
