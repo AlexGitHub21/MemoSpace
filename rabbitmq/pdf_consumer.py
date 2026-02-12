@@ -1,19 +1,13 @@
 import aio_pika
 import asyncio
 import json
-# from dotenv import load_dotenv
-# import os
 from apps.core.core_dependency.redis_dependency import RedisDependency
 from apps.core.core_dependency.db_dependency import DBDependency
 from apps.crud_notes.managers import NoteManager
+from apps.auth.managers import UserManager
 from apps.core.settings import rabbit_settings
+from apps.pdf_process.generate_pdf import generate_html
 
-
-# load_dotenv()
-# RMUSER = os.getenv("RMUSER")
-# RMPASSWORD = os.getenv("RMPASSWORD")
-# RMHOST = os.getenv("RMHOST", "localhost")
-# RMPORT = os.getenv("RMPORT", "5672")
 
 async def process_message(
         message: aio_pika.abc.AbstractIncomingMessage,
@@ -25,16 +19,19 @@ async def process_message(
             db=DBDependency(),
             redis=RedisDependency()
         )
+        user_manager = UserManager(
+            db=DBDependency(),
+            redis=RedisDependency()
+        )
 
         user_id = int(data["user_id"])
         note_id = int(data["note_id"])
 
         note = await note_manager.get_note(user_id, note_id)
-        print(note)
-        # if not note:
-        #     return pass
-        #
-        # generate_pdf(note)
+        author_login = await user_manager.get_user_by_id(user_id)
+        author_login = author_login.email
+
+        await generate_html(note, author_login)
 
 
 async def main() -> None:

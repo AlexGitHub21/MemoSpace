@@ -2,6 +2,8 @@ from apps.core.settings import redis_settings
 from redis.asyncio import ConnectionPool, Redis
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+
+
 class RedisDependency():
 
     def __init__(self):

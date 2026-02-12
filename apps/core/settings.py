@@ -4,8 +4,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 ENV_FILE = BASE_DIR / ".env"
-# from dotenv import load_dotenv
-# load_dotenv()
 
 class EmailSettings(BaseSettings):
     email_host: str
@@ -54,7 +52,7 @@ class RabbitSettings(BaseSettings):
     RMUSER: str
     RMPASSWORD: str
     RMHOST: str = "localhost"
-    RMPOST: int = 5672
+    RMPORT: int = 5672
 
     model_config = SettingsConfigDict(env_file=ENV_FILE, env_file_encoding="utf8", extra="ignore")
 

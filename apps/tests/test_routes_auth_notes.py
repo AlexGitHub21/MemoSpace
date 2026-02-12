@@ -7,12 +7,12 @@ from db.models import User
 from unittest.mock import patch, AsyncMock
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from apps.core.core_dependency.db_dependency import DBDependency
-from apps.core.settings import *
+from apps.core.settings import db_settings
 from apps.auth.handlers import AuthHandler
 
 
-TEST_DATABASE_URL = f"mysql+aiomysql://{settings.DB_SETTINGS.DB_USER}:{settings.DB_SETTINGS.DB_PASSWORD.get_secret_value()}" \
-                    f"@{settings.DB_SETTINGS.DB_HOST}:{settings.DB_SETTINGS.DB_PORT}/{settings.DB_SETTINGS.DB_NAME}"
+TEST_DATABASE_URL = f"mysql+aiomysql://{db_settings.DB_USER}:{db_settings.DB_SETTINGS.get_secret_value()}" \
+                    f"@{db_settings.DB_HOST}:{db_settings.DB_PORT}/{db_settings.DB_NAME}"
 test_engine = create_async_engine(TEST_DATABASE_URL, echo=True)
 TestSessionLocal = async_sessionmaker(test_engine, expire_on_commit=False, autocommit=False)
 

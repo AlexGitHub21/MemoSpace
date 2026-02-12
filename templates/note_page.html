@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title_note }}</title>
+  </head>
+  <body>
+    <header>
+      <h1>Заметка</h1>
+    </header>
+    <main>
+      <p>Содержание: </p>
+      <div>{{ content_note | safe }}</div>
+
+      <p>Теги: </p>
+      <div>{{ tags_note }}</div>
+
+      <p>Заметка создана: </p>
+      <div>{{ created_at_note }}</div>
+
+      <p>Последнее обновление: </p>
+      <div>{{ updated_at_note }}</div>
+    </main>
+    <footer>
+      <p>Автор заметки: </p>
+      <div>{{ author_login }}</div>
+    </footer>
+  </body>
+</html>
