@@ -25,23 +25,16 @@ class NoteManager:
             except IntegrityError:
                 await session.rollback()
 
-            return NoteVerifySchema.from_orm(new_note)
+            return NoteVerifySchema.model_validate(new_note)
 
     async def get_all_notes_by_user(self, user_id: int) -> list[NoteVerifySchema] | None:
         async with self.db.db_session() as session:
-            query = select(
-                    self.model.tags,
-                    self.model.title,
-                    self.model.is_public,
-                    self.model.content,
-                    self.model.created_at,
-                    self.model.updated_at
-            ).where(self.model.author_id == user_id)
+            query = select(self.model).where(self.model.author_id == user_id)
 
             result = await session.execute(query)
             notes = result.scalars().all()
             if notes:
-                return [NoteVerifySchema.from_orm(note) for note in notes]
+                return [NoteVerifySchema.model_validate(note) for note in notes]
             else:
                 return None
 
