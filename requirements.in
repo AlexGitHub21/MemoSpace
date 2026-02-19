@@ -1,5 +1,5 @@
 fastapi
-jwt
+pyjwt
 passlib
 starlette
 sqlalchemy
@@ -16,4 +16,8 @@ uvicorn
 alembic
 aio_pika
 dotenv
+email-validator
+aiomysql
+jinja2
+cryptography>=41.0.0
 

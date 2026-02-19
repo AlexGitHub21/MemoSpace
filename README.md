@@ -71,59 +71,85 @@ pip install -r requirements.txt
 
 ### 3. Настройка базы данных
 Создать базу данных MySQL
-Настроить параметры подключения к БД, указать порт, хост почты/redis в файле .env в корне проекта
+Настроить параметры подключения к БД, указать порт, хост почты/redis в файле .env в корне проекта 
+#### 3.1. Создать миграцию
+```commandline
+alembic revision --autogenerate -m "Create Table"
+```
+#### 3.2 Примернить миграцию
+```commandline
+alembic upgrade head
+```
 
-### 4. Запуск приложения
+### 4. Запуск приложения (не Docker)
 В корне проекта прописать команду:
 ```bash
-uvicorn apps.main:app --reload
+uvicorn app.apps.main:app --reload
 ```
 
 ### 5. Открыть Swagger UI
 http://127.0.0.1:8000/docs
 
-### 6. consumer запускаем отдельно
+
+### 6. Запустить RabbitMQ
+```commandline
+docker compose up -d rabbitmq
+```
+Ссылка на Habr: https://habr.com/ru/companies/slurm/articles/704208/
+
+### 7. consumer запускаем отдельно
 В корне проекта прописываем команду:
 ```bash
-python -m rabbitmq.pdf_consumer
+python -m app.rabbitmq.pdf_consumer
 ```
 
-### 7. Настроить RabbitMQ
-Ссылка на Habr: https://habr.com/ru/companies/slurm/articles/704208/
-В папке docker создаю файл docker-compose.yml
-
-### 8. Запустить веб-интерфейс RabbitMQ 
+### 8. Запустить celery
+В отдельном терминале в корне проекта:
 ```commandline
-docker-compose up в папке docker
+celery -A app.apps.core.celery_app worker -l INFO
 ```
+-l INFO выводит в консоль информационные сообщения о выполняемых процессах
 
-### 9. Остановить веб-интерфейс
-В папке docker:
-```commandline
-docker-compose down
-```
-
-### 10. Действия с заметками
-Действия с заметками доступны только авторизованному пользователю. 
-Необходиимо пройти регистрацию, подтвердить почту, авторизоваться и тогда работать с заметками (через Swagger UI)
-
-### 11. Действия при регистрации
-При регистрации, на почту пользователя дожно прийти письмо с подтверждением. 
-Для этого необходимо **запустить redis** с помощью команды:
+### 8. Запустить redis
 ``` bash
 redis-server 
 ```
 (прописываем команду в терминале в папке проекта)
 
-Также необходимо **запустить celery**, для этого прописываем команду в отдельном терминале в корне проекта:
-```commandline
-celery -A apps.core.celery_app worker -l INFO
-```
--l INFO выводит в консоль информационные сообщения о выполняемых процессах
+### 9. Действия с заметками
+Действия с заметками доступны только авторизованному пользователю. 
+Необходиимо пройти регистрацию, подтвердить почту, авторизоваться и тогда работать с заметками (через Swagger UI)
 
 ### Обновление requirements.txt
 В проекте используется pip-tools
 
 https://olegtalks.ru/tpost/mlxpblf661-requirementstxt-polnoe-rukovodstvo-po-up
 
+### 10. Запустить через Docker 
 
+***Собрать Docker-образ***
+```commandline
+docker compose build
+```
+
+***Миграция БД***
+```
+docker compose run --rm app bash
+alembic -c alembic.ini revision --autogenerate -m "Initial migration"
+alembic -c alembic.ini upgrade head
+exit
+```
+
+***Запустить контейнеры***
+```commandline
+docker compose up -d
+```
+
+***Запустить consumer***
+```commandline
+python -m app.rabbitmq.pdf_consumer
+```
+### 10.1. Просмотреть логи
+```commandline
+docker compose logs -f worker
+```
