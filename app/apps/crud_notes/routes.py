@@ -55,7 +55,7 @@ async def delete_note(user: Annotated[UserVerifySchema, Depends(get_current_user
 )
 async def update_note(user: Annotated[UserVerifySchema, Depends(get_current_user)],
                         data: UpdateNoteSchema,
-                        service: NoteService = Depends(NoteService)) -> bool:
+                        service: NoteService = Depends(NoteService)) -> None:
     return await service.update_note(user_id=user.id, note_id=data.id, field=data.field, content=data.content)
 
 

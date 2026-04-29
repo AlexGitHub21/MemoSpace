@@ -19,7 +19,7 @@ class NoteService:
     async def delete_all_notes(self, user_id: int) -> bool:
         return await self.manager.delete_all_notes_by_user(user_id=user_id)
 
-    async def update_note(self, user_id: int, note_id: int, field: str, content: str) -> bool:
+    async def update_note(self, user_id: int, note_id: int, field: str, content: str) -> None:
         return await self.manager.update_note_by_user(user_id=user_id, note_id=note_id, field=field, content=content)
 
     async def enqueue_pdf_generation(self, user_id: int, note_id: int) -> bool:

@@ -2,7 +2,7 @@ import aio_pika
 import asyncio
 import json
 from app.apps.core.core_dependency.redis_dependency import RedisDependency
-from app.apps.core.core_dependency.db_dependency import DBDependency
+from app.apps.core.core_dependency.db_session import SessionLocal
 from app.apps.crud_notes.managers import NoteManager
 from app.apps.auth.managers import UserManager
 from app.apps.core.settings import rabbit_settings
@@ -15,14 +15,17 @@ async def process_message(
     async with message.process(requeue=True):
         data = json.loads(message.body)
 
-        note_manager = NoteManager(
-            db=DBDependency(),
-            redis=RedisDependency()
-        )
-        user_manager = UserManager(
-            db=DBDependency(),
-            redis=RedisDependency()
-        )
+        async with SessionLocal() as session:
+            note_manager = NoteManager(
+                db_session=session,
+                redis=RedisDependency()
+            )
+
+
+            user_manager = UserManager(
+                db_session=session,
+                redis=RedisDependency()
+            )
 
         user_id = int(data["user_id"])
         note_id = int(data["note_id"])
