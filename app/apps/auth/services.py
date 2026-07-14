@@ -7,6 +7,7 @@ from app.apps.core.settings import app_settings
 from app.apps.auth.tasks import send_confirmation_email
 from starlette import status
 from starlette.responses import JSONResponse
+from app.apps.logs.logging_config import memospace_logger
 
 
 class UserService:
@@ -29,6 +30,7 @@ class UserService:
         try:
             email = self.serializer.loads(token, max_age=3600)
         except BadSignature:
+            memospace_logger.warning(f"Попытка подтверждения с недействительным токеном")
             raise HTTPException(
                 status_code=400, detail="Неверный или просроченный токен"
             )
@@ -40,6 +42,7 @@ class UserService:
         if exist_user is None or not await self.handler.verify_password(
             hashed_password=exist_user.hashed_password, raw_password=user.password
         ):
+            memospace_logger.warning("Авторизация пользователя с неверной парой логин/пароль")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Неверная почта или пароль"
@@ -63,7 +66,7 @@ class UserService:
             samesite="lax",
             secure=False,
         )
-
+        memospace_logger.info(f"Пользователь {exist_user.id} успешно вошел")
         return response
 
     async def logout_user(self, user: UserVerifySchema) -> JSONResponse:
@@ -71,5 +74,5 @@ class UserService:
 
         response = JSONResponse(content={"message": "Logged out"})
         response.delete_cookie(key="Authorization")
-
+        memospace_logger.info(f"Пользователь с id {user.id} вышел из личного кабинета")
         return response

@@ -5,6 +5,7 @@ from app.apps.auth.utils import get_token_from_cookie
 from app.apps.auth.handlers import AuthHandler
 from app.apps.admin.managers import AdminManager
 from app.apps.admin.schemas import AdminVerifySchema
+from app.apps.logs.logging_config import memospace_logger
 
 
 async def get_current_admin(
@@ -22,6 +23,7 @@ async def get_current_admin(
 
         user = await manager.get_admin_by_id(user_id=user_id)
         if not user.is_superuser:
+            memospace_logger.error(f"Пользователь с id: {user_id} пытался войти под администратором")
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Доступ запрещен")
 
         user.session_id = session_id

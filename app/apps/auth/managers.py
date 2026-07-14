@@ -7,6 +7,7 @@ from app.apps.auth.schemas import CreateUser, UserReturnData, GetUserWithIDAndEm
 from sqlalchemy import update, select
 from sqlalchemy.exc import IntegrityError
 from app.apps.core.core_dependency.redis_dependency import RedisDependency
+from app.apps.logs.logging_config import memospace_logger
 
 
 class UserManager:
@@ -21,9 +22,11 @@ class UserManager:
         self.db_session.add(new_user)
         try:
             await self.db_session.commit()
+            memospace_logger.info(f"Зарегистрирован пользователь {new_user.email}")
             await self.db_session.refresh(new_user)
         except IntegrityError:
             await self.db_session.rollback()
+            memospace_logger.warning("Повторная регистрация с повторяющейся электронной почтой")
             raise HTTPException(status_code=400, detail="User already Exists.")
 
         return UserReturnData(**new_user.__dict__)
@@ -38,6 +41,7 @@ class UserManager:
             await self.db_session.execute(query)
             await self.db_session.commit()
         except IntegrityError:
+            memospace_logger.error(f"Ошибка подтверждения пользователя c email: {email}")
             await self.db_session.rollback()
             raise
 
@@ -53,6 +57,7 @@ class UserManager:
 
         if user:
             return GetUserWithIDAndEmail(**user)
+        memospace_logger.warning(f"Пользователь с email: {email} не найден")
         return None
 
     async def store_access_token(self, token: str, user_id: uuid.UUID | str, session_id: str) -> None:
@@ -74,11 +79,9 @@ class UserManager:
 
         if user:
             return UserVerifySchema(**user)
+        memospace_logger.warning(f"Пользователь с id: {user_id} не найден")
         return None
 
     async def revoke_access_token(self, user_id: uuid.UUID | str, session_id: str) -> None:
         async with self.redis.get_client() as client:
             await client.delete(f"{user_id}:{session_id}")
-
-
-

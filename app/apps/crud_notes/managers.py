@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import update, select, delete
 from typing import Optional
+from app.apps.logs.logging_config import memospace_logger
 
 
 class NoteManager:
@@ -22,9 +23,11 @@ class NoteManager:
         self.db_session.add(new_note)
         try:
             await self.db_session.commit()
-            await self.db_session.refresh(new_note) #синхронизируем объект с БД
+            await self.db_session.refresh(new_note)
+            memospace_logger.info(f"Пользователь {user_id} создал заметку {new_note.id}")
         except IntegrityError:
             await self.db_session.rollback()
+            memospace_logger.error(f"Заметка не создана для пользователя {user_id}")
             raise
 
         return NoteVerifySchema.model_validate(new_note)
@@ -37,6 +40,7 @@ class NoteManager:
         if notes:
             return [NoteVerifySchema.model_validate(note) for note in notes]
         else:
+            memospace_logger.warning(f"Заметки для пользователя {user_id} не найдены в базе данных")
             return None
 
     async def delete_note_by_user(self, user_id: int, note_id: int) -> bool:
@@ -49,11 +53,12 @@ class NoteManager:
         try:
             result = await self.db_session.execute(query)
             await self.db_session.commit()
-
+            memospace_logger.warning(f"Заметка с id {note_id} успешно удалена для пользователя {user_id}")
             return result.rowcount > 0
 
         except SQLAlchemyError:
             await self.db_session.rollback()
+            memospace_logger.warning(f"Заметка с id {note_id} не удалена для пользователя {user_id}")
             raise
 
     async def delete_all_notes_by_user(self, user_id: int) -> bool:
@@ -65,11 +70,12 @@ class NoteManager:
         try:
             result = await self.db_session.execute(query)
             await self.db_session.commit()
-
+            memospace_logger.warning(f"Все заметки успешно удалены для пользователя {user_id}")
             return result.rowcount > 0
 
         except SQLAlchemyError:
             await self.db_session.rollback()
+            memospace_logger.warning(f"Заметки для пользователя {user_id} не найдены/удалены")
             raise
 
     async def update_note_by_user(self, user_id: int, note_id: int, field: str, content: str) -> None:
@@ -87,8 +93,10 @@ class NoteManager:
         try:
             await self.db_session.execute(query)
             await self.db_session.commit()
+            memospace_logger.info(f"Успешно обновилась заметка {note_id} пользователя {user_id}")
         except SQLAlchemyError:
             await self.db_session.rollback()
+            memospace_logger.error(f"Не удалось обновить содержимое заметки {note_id} для пользователя {user_id}")
             raise
 
     async def get_note(self, user_id: int, note_id: int) -> Optional[dict]:

@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.apps.core.core_dependency.dependencies import get_session
 from app.apps.admin.schemas import UserReturnData, AdminVerifySchema
+from app.apps.logs.logging_config import memospace_logger
 
 class AdminManager:
     def __init__(self, db_session: AsyncSession = Depends(get_session)) -> None:
@@ -21,11 +22,12 @@ class AdminManager:
         try:
             result = await self.db_session.execute(query)
             await self.db_session.commit()
-
+            memospace_logger.info(f"Удален пользователь с id: {user_id}")
             return result.rowcount > 0
 
         except SQLAlchemyError:
             await self.db_session.rollback()
+            memospace_logger.exception(f"Не удалось удалить пользователя с id: {user_id}")
             raise
 
     async def get_users(self) -> list[UserReturnData]:
@@ -48,6 +50,7 @@ class AdminManager:
         user = result.scalar_one_or_none()
 
         if not user:
+            memospace_logger.error(f"Пользователь с id: {user_id} не найден в базе данных")
             raise HTTPException(
                 status_code=404,
                 detail="User not found"
@@ -65,10 +68,11 @@ class AdminManager:
         try:
             await self.db_session.execute(query)
             await self.db_session.commit()
-
+            memospace_logger.info(f"Статус суперпользователя назначен для пользователя {user_id}")
             return await self.get_user_by_id(user_id)
         except SQLAlchemyError:
             await self.db_session.rollback()
+            memospace_logger.exception(f"Не удалось изменить статус для пользователя {user_id}")
             raise
 
     async def get_admin_by_id(self, user_id: uuid.UUID | str) -> AdminVerifySchema | None:
@@ -83,4 +87,5 @@ class AdminManager:
 
         if user:
             return AdminVerifySchema(**user)
+        memospace_logger.error(f"Пользователь с id: {user_id} не найден в базе данных")
         return None
