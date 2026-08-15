@@ -1,6 +1,10 @@
-from pathlib import Path
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+env_file=".test.env" if os.getenv("TESTING") else ".env"
 
 
 class EmailSettings(BaseSettings):
@@ -38,7 +42,7 @@ class DBSettings(BaseSettings):
     DB_ECHO: bool
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=env_file,
         extra="ignore"
     )
 

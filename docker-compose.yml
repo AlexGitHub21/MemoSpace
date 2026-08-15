@@ -11,7 +11,6 @@ services:
       - .:/src
     ports:
       - ${APP_HOST_PORT}:8000
-    restart: always
     env_file:
       - .env.docker
     environment:
@@ -20,7 +19,6 @@ services:
     container_name: my_project_message_broker
     image: rabbitmq:3-management
     hostname: rabbitmq
-    restart: always
     environment:
       - RABBITMQ_DEFAULT_USER=${RMUSER}
       - RABBITMQ_DEFAULT_PASS=${RMPASSWORD}
@@ -42,7 +40,6 @@ services:
       - db-data:/var/lib/mysql
       - ./data/conf.d:/etc/mysql/conf.d
       - ./data/logs:/logs
-    restart: always
   redis:
     container_name: my_project_redis
     image: redis:alpine

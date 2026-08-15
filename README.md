@@ -81,51 +81,56 @@ alembic revision --autogenerate -m "Create Table"
 alembic upgrade head
 ```
 
-### 4. Запуск приложения (не Docker)
+# 1. Запуск приложения (не Docker)
 В корне проекта прописать команду:
 ```bash
 uvicorn app.apps.main:app --reload
 ```
 
-### 5. Открыть Swagger UI
+### 1.1. Открыть Swagger UI
 http://127.0.0.1:8000/docs
 
 
-### 6. Запустить RabbitMQ
+### 1.2. Запустить RabbitMQ
 ```commandline
 docker compose up -d rabbitmq
 ```
 Ссылка на Habr: https://habr.com/ru/companies/slurm/articles/704208/
 
-### 7. consumer запускаем отдельно
+### 1.3. consumer запускаем отдельно
 В корне проекта прописываем команду:
 ```bash
 python -m app.rabbitmq.pdf_consumer
 ```
 
-### 8. Запустить celery
+### 1.4. Запустить celery
 В отдельном терминале в корне проекта:
 ```commandline
 celery -A app.apps.core.celery_app worker -l INFO
 ```
 -l INFO выводит в консоль информационные сообщения о выполняемых процессах
 
-### 8. Запустить redis
+### 1.5. Запустить redis
 ``` bash
 redis-server 
 ```
 (прописываем команду в терминале в папке проекта)
 
-### 9. Действия с заметками
+### 1.6. Действия с заметками
 Действия с заметками доступны только авторизованному пользователю. 
 Необходиимо пройти регистрацию, подтвердить почту, авторизоваться и тогда работать с заметками (через Swagger UI)
 
-### Обновление requirements.txt
+### 1.7. Обновление requirements.txt
 В проекте используется pip-tools
 
 https://olegtalks.ru/tpost/mlxpblf661-requirementstxt-polnoe-rukovodstvo-po-up
 
-### 10. Запустить через Docker 
+### 1.8. Запуск тестов
+```commandline
+TESTING=1 pytest
+```
+
+# 2. Запустить через Docker 
 
 ***Собрать Docker-образ***
 ```commandline
