@@ -1,10 +1,16 @@
-from fastapi import APIRouter, Depends
+from datetime import timedelta
+from tkinter.constants import RAISED
+
+from celery.bin.result import result
+from fastapi import APIRouter, Depends, Header, HTTPException
 from starlette import status
 from typing import Annotated
 from app.apps.auth.schemas import UserVerifySchema
 from app.apps.crud_notes.schemas import NoteVerifySchema, BaseNote, UpdateNoteSchema
 from app.apps.crud_notes.services import NoteService
-from app.apps.auth.depends import get_current_user
+from app.apps.auth.depends import get_current_user, generate_idempotency_key
+from app.apps.core.core_dependency.redis_dependency import RedisDependency
+
 
 crud_notes_router = APIRouter(prefix="/crud_notes", tags=["crud_notes"])
 
@@ -14,10 +20,40 @@ crud_notes_router = APIRouter(prefix="/crud_notes", tags=["crud_notes"])
     response_model=NoteVerifySchema,
     status_code=status.HTTP_200_OK
 )
-async def create_note(user: Annotated[UserVerifySchema, Depends(get_current_user)],
-                      content: BaseNote,
-                      service: NoteService = Depends(NoteService)) -> NoteVerifySchema:
-    return await service.add_note(user_id=user.id, note=content)
+async def create_note(
+        user: Annotated[UserVerifySchema, Depends(get_current_user)],
+        content: BaseNote,
+        idempotency_key: Annotated[str, Header(alias="Idempotency-key")],
+        service: NoteService = Depends(NoteService),
+        redis: RedisDependency = Depends(RedisDependency)) -> NoteVerifySchema:
+
+    redis_key = f"idempotency:{idempotency_key}"
+    async with redis.get_client() as client:
+
+        cached_result = await client.get(redis_key)
+
+        #если запрос такой уже выполняется
+        if cached_result is not None:
+            return NoteVerifySchema.model_validate_json(cached_result)
+
+        result = await client.set(redis_key, "PENDING", ex=3600, nx=True)
+        if result is None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Запрос уже выполняется"
+            )
+
+        note = await service.add_note(
+            user_id=user.id,
+            note=content
+        )
+        await client.set(
+            redis_key,
+            note.model_dump_json(),
+            ex=3600
+        )
+
+        return note
 
 
 @crud_notes_router.get(
