@@ -14,6 +14,9 @@ async def process_message(
 ) -> None:
     async with message.process(requeue=True):
         data = json.loads(message.body)
+        user_id = int(data["user_id"])
+        note_id = int(data["note_id"])
+        redis_key = f"idempotency:{data['idempotency_key']}"
 
         async with SessionLocal() as session:
             note_manager = NoteManager(
@@ -27,14 +30,14 @@ async def process_message(
                 redis=RedisDependency()
             )
 
-        user_id = int(data["user_id"])
-        note_id = int(data["note_id"])
-
-        note = await note_manager.get_note(user_id, note_id)
-        author_login = await user_manager.get_user_by_id(user_id)
-        author_login = author_login.email
+            note = await note_manager.get_note(user_id, note_id)
+            author_login = await user_manager.get_user_by_id(user_id)
+            author_login = author_login.email
 
         await generate_html(note, author_login)
+        redis = RedisDependency()
+        async with redis.get_client() as client:
+            await client.set(redis_key, "COMPLETED", ex=3600)
 
 
 async def main() -> None:

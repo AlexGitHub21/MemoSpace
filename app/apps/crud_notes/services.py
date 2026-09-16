@@ -22,6 +22,6 @@ class NoteService:
     async def update_note(self, user_id: int, note_id: int, field: str, content: str) -> None:
         return await self.manager.update_note_by_user(user_id=user_id, note_id=note_id, field=field, content=content)
 
-    async def enqueue_pdf_generation(self, user_id: int, note_id: int) -> bool:
-        await publish_pdf_task(user_id=user_id, note_id=note_id)
+    async def enqueue_pdf_generation(self, user_id: int, note_id: int, idempotency_key: str) -> bool:
+        await publish_pdf_task(user_id=user_id, note_id=note_id, idempotency_key=idempotency_key)
         return True

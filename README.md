@@ -96,6 +96,10 @@ http://127.0.0.1:8000/docs
 docker compose up -d rabbitmq
 ```
 Ссылка на Habr: https://habr.com/ru/companies/slurm/articles/704208/
+### 1.2.1 Остановить RabbitMQ
+```commandline
+docker compose stop rabbitmq
+```
 
 ### 1.3. consumer запускаем отдельно
 В корне проекта прописываем команду:

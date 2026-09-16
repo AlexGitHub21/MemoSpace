@@ -68,7 +68,7 @@ class UserManager:
         async with self.redis.get_client() as client:
             return await client.get(f"{user_id}:{session_id}")
 
-    async def get_user_by_id(self, user_id: uuid.UUID | str) -> UserVerifySchema | None:
+    async def get_user_by_id(self, user_id: int | str) -> UserVerifySchema | None:
         query = select(
             self.model.id,
             self.model.email

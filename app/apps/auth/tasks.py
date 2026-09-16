@@ -21,6 +21,6 @@ def send_confirmation_email(to_email: str, token: str) -> None:
 
     with smtplib.SMTP_SSL(host=email_settings.email_host, port=email_settings.email_port) as smtp:
         smtp.login(user=email_settings.email_username,
-                   password=email_settings.email_password,
+                   password=email_settings.email_password.get_secret_value(),
                    )
         smtp.send_message(msg=message)

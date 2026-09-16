@@ -11,7 +11,7 @@ class EmailSettings(BaseSettings):
     email_host: str
     email_port: int
     email_username: str
-    email_password: str
+    email_password: SecretStr
 
     model_config = SettingsConfigDict(
         env_file=".env",

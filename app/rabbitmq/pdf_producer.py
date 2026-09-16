@@ -10,7 +10,7 @@ RMHOST = os.getenv("RMHOST", "localhost")
 RMPORT = os.getenv("RMPORT", "5672")
 
 
-async def publish_pdf_task(user_id: int, note_id: int):
+async def publish_pdf_task(user_id: int, note_id: int, idempotency_key: str):
     connection = await aio_pika.connect_robust(f"amqp://{RMUSER}:{RMPASSWORD}@{RMHOST}:{RMPORT}/")
 
     async with connection:
@@ -23,7 +23,8 @@ async def publish_pdf_task(user_id: int, note_id: int):
         )
         message = {
             "user_id": user_id,
-            "note_id": note_id
+            "note_id": note_id,
+            "idempotency_key": idempotency_key
         }
 
         await exchange.publish(

@@ -1,6 +1,7 @@
 from datetime import timedelta
 from tkinter.constants import RAISED
 
+import redis
 from celery.bin.result import result
 from fastapi import APIRouter, Depends, Header, HTTPException
 from starlette import status
@@ -8,7 +9,7 @@ from typing import Annotated
 from app.apps.auth.schemas import UserVerifySchema
 from app.apps.crud_notes.schemas import NoteVerifySchema, BaseNote, UpdateNoteSchema
 from app.apps.crud_notes.services import NoteService
-from app.apps.auth.depends import get_current_user, generate_idempotency_key
+from app.apps.auth.depends import get_current_user
 from app.apps.core.core_dependency.redis_dependency import RedisDependency
 
 
@@ -100,6 +101,30 @@ async def update_note(user: Annotated[UserVerifySchema, Depends(get_current_user
     status_code=status.HTTP_200_OK
 )
 async def generate_pdf(user: Annotated[UserVerifySchema, Depends(get_current_user)],
-                        note_id: int,
-                        service: NoteService = Depends(NoteService)) -> bool:
-    return await service.enqueue_pdf_generation(user_id=user.id, note_id=note_id)
+                       note_id: int,
+                       idempotency_key: Annotated[str, Header(alias="Idempotency-key")],
+                       service: NoteService = Depends(NoteService),
+                       redis: RedisDependency = Depends(RedisDependency)) -> bool:
+
+    redis_key = f"idempotency:{idempotency_key}"
+    async with redis.get_client() as client:
+
+        #если такого ключа нет в redis, записываем в redis ключ redis_key со значением "PENDING"
+        result = await client.set(redis_key, "PENDING", ex=3600, nx=True)
+        #если такой ключ есть в redis, получаем то, что хранится в redis по этому ключу
+        if result is None:
+            cached_result = await client.get(redis_key)
+
+            if cached_result == "COMPLETED":
+                return True
+
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Запрос уже выполняется"
+            )
+
+        return await service.enqueue_pdf_generation(
+            user_id=user.id,
+            note_id=note_id,
+            idempotency_key=idempotency_key
+        )
